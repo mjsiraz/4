@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIP নাম্বার ফাইন্ডার</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Noto Sans Bengali","Segoe UI",sans-serif;color:#f1f0ff;background:linear-gradient(160deg,#120d2e,#1f1650 55%,#2a1d6b);padding:14px 12px 40px}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-size:20px;margin:6px 0 2px;text-align:center}
+  .sub{text-align:center;font-size:12px;opacity:.7;margin-bottom:14px}
+  .card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:18px;padding:12px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 10px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .tile{position:relative;padding:14px 4px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:20px;font-weight:700;letter-spacing:2px;cursor:pointer}
+  .tile:active{transform:scale(.97)}
+  .tile.on{background:#6d3fe0;border-color:#a78bfa;box-shadow:0 0 0 2px rgba(167,139,250,.4)}
+  .tile .b{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#16a34a;color:#fff;font-size:11px;letter-spacing:0;line-height:20px}
+  .bar{height:9px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden;margin:8px 0}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,#a78bfa,#34d399);transition:width .2s}
+  .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .stat{font-size:13px;opacity:.9;line-height:1.5}
+  .stop{padding:9px 14px;border:0;border-radius:12px;background:#7f1d3a;color:#fff;font-size:14px}
+  .num{display:flex;justify-content:space-between;align-items:center;padding:13px 12px;margin-top:7px;border-radius:12px;background:rgba(109,63,224,.28);font-size:20px;letter-spacing:1px;cursor:pointer}
+  .num b{color:#fde68a}
+  .num small{font-size:12px;opacity:.75;letter-spacing:0}
+  .empty{opacity:.65;font-size:14px;padding:6px 0}
+  .warn{color:#fcd34d;font-size:12px;margin-top:4px}
+  .pos{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+  .pos input{width:100%;padding:11px 0;text-align:center;font-size:20px;font-weight:700;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.09);color:#fff;outline:none}
+  .pos input:focus{border-color:#a78bfa;box-shadow:0 0 0 2px rgba(167,139,250,.35)}
+  .pl{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-bottom:4px;font-size:10px;opacity:.55;text-align:center}
+  .ops{display:flex;gap:6px;margin:10px 0 8px}
+  .ops button{flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font-size:13px}
+  .ops button.on{background:#6d3fe0;border-color:#a78bfa}
+  .go{width:100%;padding:13px;border:0;border-radius:14px;background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff;font-size:17px;font-weight:700}
+  .go:disabled{opacity:.45}
+  .hint{font-size:12px;opacity:.8;margin:8px 0;line-height:1.5}
+  .api{font-size:11px;opacity:.7;margin-top:6px;word-break:break-all}
+  .pager{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:10px 0 4px}
+  .pager button,.tools button{padding:10px 12px;border-radius:12px;border:0;background:#6d3fe0;color:#fff;font-size:14px;font-weight:600}
+  .pager button:disabled{opacity:.35}
+  .pager span{font-size:12px;opacity:.85;text-align:center;line-height:1.4}
+  .tools{display:flex;gap:8px;margin:6px 0}
+  .tools button{flex:1;background:#3b3566}
+  .grp{display:flex;gap:10px;align-items:flex-start;padding:9px 8px;border-radius:12px;background:rgba(255,255,255,.05);margin-bottom:6px;font-size:14px}
+  .grp input{width:20px;height:20px;margin-top:1px;flex:none}
+  .grp small{display:block;opacity:.65;font-size:11px;margin-top:2px}
+  .btns{display:flex;gap:8px;margin:10px 0 4px}
+  .btns button{flex:1;padding:12px;border:0;border-radius:12px;color:#fff;font-size:15px;font-weight:700}
+  #aPause{background:#6d3fe0}
+  #aReset{background:#3b3566}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💎 VIP নাম্বার ফাইন্ডার</h1>
+  <div class="sub">একই ডিজিটের নাম্বার আগে (01811…, 018888…, 016000000…) · এয়ারটেল (016) ও রবি (018) দুটোই</div>
+
+  <!-- ===== অটো মোড ===== -->
+  <div class="card">
+    <h2>💎 অটো মোড (পেজ খুললেই নিজে চলে)</h2>
+    <div class="hint" style="margin-top:0">একই ডিজিটের শুরু আগে আসে। প্রতিটি প্রিফিক্সে কমপক্ষে ৯৯,৯৯৯টি নাম্বার চেক হয় (কম থাকলে সবগুলো)। গতি ১০০/সেকেন্ড পর্যন্ত।</div>
+    <div id="aGroups"></div>
+    <div class="btns">
+      <button id="aPause">⏸ বিরতি</button>
+      <button id="aReset">🔄 নতুন করে শুরু</button>
+    </div>
+    <div class="bar"><div id="aBar"></div></div>
+    <div class="stat" id="aStat"></div>
+    <div class="warn" id="aWarn"></div>
+    <div class="api" id="aNote"></div>
+    <div id="aPagerHost"></div>
+  </div>
+
+  <div class="card">
+    <h2>৫ ডিজিট একই (যেমন 11111)</h2>
+    <div class="grid" id="g5"></div>
+  </div>
+  <div class="card">
+    <h2>৬ ডিজিট একই (যেমন 111111)</h2>
+    <div class="grid" id="g6"></div>
+  </div>
+
+  <div class="card">
+    <h2>✏️ কাস্টম (৮ ঘর)</h2>
+    <div class="pl"><span>১</span><span>২</span><span>৩</span><span>৪</span><span>৫</span><span>৬</span><span>৭</span><span>৮</span></div>
+    <div class="pos" id="pos"></div>
+    <div class="ops" id="ops">
+      <button type="button" data-op="both" class="on">দুটোই</button>
+      <button type="button" data-op="016">এয়ারটেল 016</button>
+      <button type="button" data-op="018">রবি 018</button>
+    </div>
+    <div class="hint" id="cHint"></div>
+    <button class="go" id="cGo" disabled>🔎 সার্চ করুন</button>
+  </div>
+
+  <div class="card" id="resCard" style="display:none">
+    <div class="row">
+      <div style="font-size:17px;font-weight:700" id="resTitle"></div>
+      <button class="stop" id="stopBtn">⏹ থামান</button>
+    </div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="stat" id="stat"></div>
+    <div class="warn" id="warn"></div>
+    <div class="api" id="apiNote"></div>
+    <div id="mPagerHost"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const API = 'https://da-api.robi.com.bd/da-nll/free-msisdn/get-msisdn-list';
+  const BR = [
+    { brand: 'AIRTEL', base: '88016', code: '016' },
+    { brand: 'ROBI',   base: '88018', code: '018' }
+  ];
+  const MAXC = 100;           // সর্বোচ্চ সমান্তরাল রিকোয়েস্ট
+  const MANUAL_CONC = 60;
+  const RATE = (typeof window !== 'undefined' && window.__RATE) || 100;   // প্রতি সেকেন্ডে সর্বোচ্চ রিকোয়েস্ট
+  const PAGE = 500;
+  const MAX_FREE = 5;
+
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const pad = (k, n) => String(k).padStart(n, '0');
+  function el(tag, props) { const e = document.createElement(tag); if (props) Object.assign(e, props); return e; }
+  function timeLabel(sec) {
+    if (!isFinite(sec) || sec < 0) return '...';
+    if (sec >= 3600) return (sec / 3600).toFixed(1) + ' ঘণ্টা';
+    return Math.max(1, Math.round(sec / 60)) + ' মিনিট';
+  }
+
+  // ================= API চেক =================
+  let nextSlot = 0;
+  async function throttle() {
+    const now = performance.now();
+    const slot = Math.max(nextSlot, now);
+    nextSlot = slot + 1000 / RATE;
+    if (slot > now) await sleep(slot - now);
+  }
+  async function check(brand, number, signal, stats) {
+    for (let a = 0; a < 4; a++) {
+      await throttle();
+      if (signal.aborted) return null;
+      const c = new AbortController();
+      const onAbort = () => c.abort();
+      signal.addEventListener('abort', onAbort);
+      const t = setTimeout(() => c.abort(), 20000);
+      try {
+        const r = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ msisdn: number, brand, simCategory: 'PREPAID' }),
+          signal: c.signal
+        });
+        if (r.ok) {
+          const data = await r.json();
+          if (!stats.sample) {
+            stats.sample = `${number} → ${JSON.stringify(data).slice(0, 160)}`;
+            if (stats.noteEl) stats.noteEl.textContent = 'API উত্তরের নমুনা: ' + stats.sample;
+          }
+          return !!data && data.available === true;
+        }
+        stats.lastErr = 'HTTP ' + r.status;
+        if (r.status === 429) await sleep(1500 * (a + 1));
+      } catch (e) {
+        if (signal.aborted) return null;
+        stats.lastErr = 'নেটওয়ার্ক/টাইমআউট';
+      } finally {
+        clearTimeout(t);
+        signal.removeEventListener('abort', onAbort);
+      }
+      await sleep(400 * Math.pow(2, a));
+    }
+    return undefined;
+  }
+
+  // ================= ৫০০টি করে পাতা =================
+  function makePager(host, o) {
+    const bar = el('div', { className: 'pager' });
+    const prev = el('button', { textContent: '◀ আগের' });
+    const info = el('span');
+    const next = el('button', { textContent: 'পরের ৫০০ ▶' });
+    bar.appendChild(prev); bar.appendChild(info); bar.appendChild(next);
+    const tools = el('div', { className: 'tools' });
+    const copy = el('button', { textContent: '📋 এই পাতা কপি' });
+    const dl = el('button', { textContent: '⬇️ সব সেভ (.txt)' });
+    tools.appendChild(copy); tools.appendChild(dl);
+    const box = el('div');
+    box.appendChild(bar); box.appendChild(tools);
+    const list = el('div');
+    host.appendChild(box); host.appendChild(list);
+    let page = 0, timer = null;
+
+    function render() {
+      timer = null;
+      const all = o.getAll();
+      const total = all.length, more = o.canMore ? o.canMore() : false;
+      const pagesReal = Math.max(1, Math.ceil(total / PAGE));
+      if (!more && page > pagesReal - 1) page = pagesReal - 1;
+      list.innerHTML = '';
+      box.style.display = (total > 0 || page > 0) ? 'block' : 'none';
+      if (!total && page === 0) { list.appendChild(el('div', { className: 'empty', textContent: 'এখনও কোনো নাম্বার পাওয়া যায়নি' })); return; }
+      const from = page * PAGE, to = Math.min(total, from + PAGE);
+      const hl = o.getHl();
+      const frag = document.createDocumentFragment();
+      for (let k = from; k < to; k++) {
+        const n = all[k];
+        const row = el('div', { className: 'num' });
+        const tag = o.tag ? o.tag(n) : (n.startsWith('016') ? 'এয়ারটেল' : 'রবি');
+        row.innerHTML = `<span>${hl(n)}</span><small>${k + 1} · ${tag}</small>`;
+        row.addEventListener('click', () => {
+          try { navigator.clipboard.writeText(n); } catch (e) {}
+          o.msg('কপি হয়েছে: ' + n);
+        });
+        frag.appendChild(row);
+      }
+      list.appendChild(frag);
+      if (from >= total) list.appendChild(el('div', { className: 'empty', textContent: '🔎 খোঁজা হচ্ছে... পাওয়া মাত্র এখানে আসবে' }));
+      const have = Math.max(0, to - from);
+      info.innerHTML = `পাতা ${page + 1}${more ? '' : '/' + pagesReal}<br>${have ? (from + 1) + '–' + to : '০'} / মোট ${total}`;
+      prev.disabled = page === 0;
+      const hasReal = page < pagesReal - 1, full = total >= (page + 1) * PAGE;
+      next.disabled = !(hasReal || (more && full));
+      next.textContent = hasReal ? ((total - to) >= PAGE ? 'পরের ৫০০ ▶' : `পরের ${total - to} ▶`)
+                                 : (more ? (full ? 'পরের ৫০০ ▶' : `⏳ ${have}/${PAGE}`) : 'শেষ');
+    }
+    function go(d) {
+      page = Math.max(0, page + d);
+      if (o.onPage) o.onPage(page);
+      render();
+      try { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+    }
+    prev.addEventListener('click', () => go(-1));
+    next.addEventListener('click', () => go(1));
+    copy.addEventListener('click', () => {
+      const part = o.getAll().slice(page * PAGE, page * PAGE + PAGE);
+      try { navigator.clipboard.writeText(part.join('\n')); o.msg(`${part.length} টি নাম্বার কপি হয়েছে`); }
+      catch (e) { o.msg('কপি করা যায়নি'); }
+    });
+    dl.addEventListener('click', () => {
+      const all = o.getAll();
+      if (!all.length) { o.msg('সেভ করার মতো নাম্বার নেই'); return; }
+      const a = el('a');
+      a.href = URL.createObjectURL(new Blob([all.join('\n')], { type: 'text/plain' }));
+      a.download = o.fname();
+      document.body.appendChild(a); a.click(); a.remove();
+      o.msg(`${all.length} টি নাম্বার সেভ হচ্ছে`);
+    });
+    return {
+      render,
+      schedule() { if (!timer) timer = setTimeout(render, 250); },
+      reset() { page = 0; render(); }
+    };
+  }
+
+  // ================= অটো মোড: একই-ডিজিটের প্রিফিক্স (নাম্বারের শুরুর অংশ) =================
+  const LIMIT = 100000;   // প্রতিটি প্রিফিক্সে কমপক্ষে ৯৯,৯৯৯টি (কম থাকলে সবগুলো)
+  // অগ্রাধিকারের ক্রম: যত বেশি একই ডিজিট তত আগে। আগের ধরনের সাথে মিলে গেলে পরের ধরনে আর চেক হয় না।
+  const RX = [
+    /^(\d)\1{7}$/, /^(\d)\1{5}/, /^(\d)\1{4}/, /^(\d)\1(\d)\2(\d)\3/,
+    /^(\d)\1{3}/, /^(\d)\1(\d)\2/, /^(\d)\1{2}/, /^(\d)\1/
+  ];
+  const digs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const rpt = (d, n) => String(d).repeat(n);
+  const FAMS = [
+    { id: 'f8', len: 8, short: '৮ একই', name: 'পুরো ৮ ডিজিট একই (01611111111…)', pre: () => digs.map(d => rpt(d, 8)) },
+    { id: 'f6', len: 6, short: 'শুরুতে ৬ একই', name: 'শুরুতে ৬টি একই (016000000…)', pre: () => digs.map(d => rpt(d, 6)) },
+    { id: 'f5', len: 5, short: 'শুরুতে ৫ একই', name: 'শুরুতে ৫টি একই (01888888…)', pre: () => digs.map(d => rpt(d, 5)) },
+    { id: 'f3p', len: 6, short: 'aabbcc', name: 'তিন জোড়া aabbcc (018112233…)',
+      pre: () => { const o = []; digs.forEach(x => digs.forEach(y => digs.forEach(z => o.push('' + x + x + y + y + z + z)))); return o; } },
+    { id: 'f4', len: 4, short: 'শুরুতে ৪ একই', name: 'শুরুতে ৪টি একই (0188888…)', pre: () => digs.map(d => rpt(d, 4)) },
+    { id: 'f2p', len: 4, short: 'aabb', name: 'দুই জোড়া aabb (0181122…, 0188811…)',
+      pre: () => { const o = []; digs.forEach(x => digs.forEach(y => o.push('' + x + x + y + y))); return o; } },
+    { id: 'f3', len: 3, short: 'শুরুতে ৩ একই', name: 'শুরুতে ৩টি একই (018888…)', pre: () => digs.map(d => rpt(d, 3)) },
+    { id: 'f2', len: 2, short: 'শুরুতে ২ একই', name: 'শুরুতে ২টি একই (01811…, 01822…, 01855…)', pre: () => digs.map(d => rpt(d, 2)) }
+  ];
+  const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+  FAMS.forEach(f => {
+    f.pref = f.pre();
+    f.P = f.pref.length;
+    f.free = 8 - f.len;
+    f.M = Math.pow(10, f.free);
+    f.per = Math.min(f.M, LIMIT);
+    f.total = f.P * 2 * f.per;
+    f.A = [104729, 1299709, 15485863, 7919, 1009, 101, 13, 3, 1].find(a => gcd(a, f.total) === 1);
+    f.C = Math.floor(f.total * 0.37);
+  });
+  const FIDX = {}; FAMS.forEach((f, i) => { FIDX[f.id] = i; });
+  const tierOf = g => (g in FIDX ? FIDX[g] : 500);
+
+  // ক্রম অনুযায়ী (এলোমেলো সাজানো) প্রতিটি টাস্ক: { op, suffix } অথবা { skip }
+  function famTask(fi, c) {
+    const f = FAMS[fi];
+    const j = (f.A * c + f.C) % f.total;
+    const op = j % 2, r = (j - op) / 2, p = r % f.P, k = (r - p) / f.P;
+    const tail = f.free ? pad((k * 7919 + p * 104729 + op * 5003 + 12345) % f.M, f.free) : '';
+    const suffix = f.pref[p] + tail;
+    for (let q = 0; q < fi; q++) if (RX[q].test(suffix)) return { skip: true };
+    return { op, suffix };
+  }
+
+  // ================= অটো মোডের ইঞ্জিন =================
+  const AKEY = 'vipAuto_v2';
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem(AKEY) || '{}') || {}; } catch (e) {}
+  const sel = {}, cursor = {}, fin = {};
+  FAMS.forEach(f => {
+    sel[f.id] = st.sel && f.id in st.sel ? !!st.sel[f.id] : true;
+    cursor[f.id] = Math.min(Math.max(0, (st.cursor && st.cursor[f.id]) || 0), f.total);
+    fin[f.id] = cursor[f.id];
+  });
+  const found = new Map();   // নাম্বার -> { g: ধরন, s: আবিষ্কারের ক্রম }
+  let seq = 0;
+  (Array.isArray(st.found) ? st.found : []).forEach(x => {
+    if (Array.isArray(x) && typeof x[0] === 'string') { found.set(x[0], { g: x[1] || 'f2', s: x[2] || ++seq }); seq = Math.max(seq, x[2] || 0); }
+  });
+  const auto = { running: false, id: 0, ctrl: null, verify: [], redo: [], failed: [], failedCount: 0,
+                 verified: false, epoch: 0, cur: MAXC, win: [], warnedZero: false, lastSave: 0,
+                 sess: 0, t0: 0, lt: 0, sp0: 0, sp1: 0, speed: 0, stats: { noteEl: $('aNote') } };
+
+  const aMsg = t => { $('aWarn').textContent = t; };
+  function hlAuto(n) {
+    const v = found.get(n), f = v && FAMS[FIDX[v.g]];
+    if (!f) return n;
+    return `${n.slice(0, 3)}<b>${n.slice(3, 3 + f.len)}</b>${n.slice(3 + f.len)}`;
+  }
+  const ordered = () => [...found.entries()].sort((x, y) => {
+    const tx = tierOf(x[1].g), ty = tierOf(y[1].g);
+    return tx !== ty ? tx - ty : x[1].s - y[1].s;
+  }).map(e => e[0]);
+  const vipLeft = () => {
+    if (auto.verify.length || auto.redo.length || auto.failed.length) return true;
+    return FAMS.some(f => sel[f.id] && cursor[f.id] < f.total);
+  };
+  const aPager = makePager($('aPagerHost'), {
+    getAll: ordered, getHl: () => hlAuto, msg: aMsg, fname: () => 'auto_numbers.txt',
+    canMore: () => auto.running && vipLeft(),
+    tag: n => { const v = found.get(n), f = v && FAMS[FIDX[v.g]]; return (n.startsWith('016') ? 'এয়ারটেল' : 'রবি') + ' · ' + (f ? f.short : 'VIP'); }
+  });
+
+  let saveT = null;
+  function saveNow() {
+    const c = {};
+    FAMS.forEach(f => { c[f.id] = fin[f.id] >= f.total ? f.total : Math.max(0, cursor[f.id] - 2 * MAXC); });
+    try { localStorage.setItem(AKEY, JSON.stringify({ sel, cursor: c, found: [...found.entries()].map(e => [e[0], e[1].g, e[1].s]) })); } catch (e) {}
+  }
+  function saveSoon() { if (!saveT) saveT = setTimeout(() => { saveT = null; saveNow(); }, 3000); }
+
+  // ধরনের তালিকা
+  const grpSmall = {};
+  FAMS.forEach(f => {
+    const row = el('label', { className: 'grp' });
+    const cb = el('input', { type: 'checkbox', checked: sel[f.id] });
+    const txt = el('span', { textContent: f.name });
+    const small = el('small');
+    txt.appendChild(small);
+    row.appendChild(cb); row.appendChild(txt);
+    $('aGroups').appendChild(row);
+    grpSmall[f.id] = small;
+    cb.addEventListener('change', () => { sel[f.id] = !!cb.checked; saveNow(); aTick(true); });
+  });
+
+  function aTick(force) {
+    const now = Date.now();
+    if (!force && now - auto.lt < 500) return;
+    auto.lt = now;
+    if (auto.running && now - auto.sp0 >= 3000) {
+      auto.speed = (auto.sess - auto.sp1) / ((now - auto.sp0) / 1000);
+      auto.sp0 = now; auto.sp1 = auto.sess;
+    }
+    let tot = 0, dn = 0;
+    FAMS.forEach(f => { if (!sel[f.id]) return; tot += f.total; dn += Math.min(fin[f.id], f.total); });
+    const sp = auto.speed > 1 ? auto.speed : RATE;
+    $('aBar').style.width = (tot ? dn / tot * 100 : 0) + '%';
+    $('aStat').innerHTML = `চেক ${dn.toLocaleString()}/${tot.toLocaleString()} · পাওয়া গেছে <b>${found.size}</b> টি` +
+      (auto.running ? `<br>গতি ${auto.speed.toFixed(0)}/সেকেন্ড · সমান্তরাল ${auto.cur} · বাকি প্রায় ${timeLabel((tot - dn) / sp)}` : '') +
+      (auto.failedCount ? ` · ব্যর্থ ${auto.failedCount}` : '');
+    FAMS.forEach(f => {
+      const d = Math.min(fin[f.id], f.total);
+      grpSmall[f.id].textContent = d >= f.total
+        ? `${f.total.toLocaleString()} চেক · ✅ শেষ`
+        : `${f.total.toLocaleString()} চেক · ${Math.floor(d / f.total * 100)}% · পুরো হতে ≈ ${timeLabel((f.total - d) / sp)}`;
+    });
+    if (dn >= 3000 && found.size === 0 && !auto.warnedZero) {
+      auto.warnedZero = true;
+      aMsg('⚠️ ' + dn + 'টি চেকেও কোনো খালি নাম্বার মেলেনি। API-র উত্তরের নমুনা নিচে দেখুন।');
+    }
+    if (auto.failedCount > 20 && auto.failedCount > dn * 0.2) aMsg('⚠️ অনেক রিকোয়েস্ট ব্যর্থ (' + (auto.stats.lastErr || '') + '), সমান্তরাল রিকোয়েস্ট কমানো হচ্ছে');
+    if (now - auto.lastSave > 10000) { auto.lastSave = now; saveNow(); }
+  }
+
+  function nextTask() {
+    if (auto.verify.length) return { t: 'v', e: auto.epoch, n: auto.verify.shift() };
+    if (auto.redo.length) return auto.redo.shift();
+    for (let fi = 0; fi < FAMS.length; fi++) {
+      const f = FAMS[fi];
+      if (!sel[f.id]) continue;
+      while (cursor[f.id] < f.total) {
+        const x = famTask(fi, cursor[f.id]++);
+        if (x.skip) { fin[f.id]++; continue; }
+        const b = BR[x.op];
+        return { t: 't', e: auto.epoch, g: f.id, b, n: b.base + x.suffix };
+      }
+    }
+    if (auto.failed.length) return auto.failed.shift();
+    return null;
+  }
+
+  // ব্যর্থতা বেশি হলে সমান্তরাল রিকোয়েস্ট কমে, ঠিক থাকলে ধীরে ধীরে বাড়ে
+  function adapt(failed) {
+    auto.win.push(failed ? 1 : 0);
+    if (auto.win.length >= 50) {
+      const rate = auto.win.reduce((x, y) => x + y, 0) / auto.win.length;
+      auto.win = [];
+      if (rate > 0.2) auto.cur = Math.max(10, Math.floor(auto.cur * 0.7));
+      else if (rate < 0.04 && auto.cur < MAXC) auto.cur = Math.min(MAXC, auto.cur + 10);
+    }
+  }
+
+  async function aWorker(id, idx, run) {
+    try {
+      while (auto.running && id === auto.id) {
+        if (idx >= auto.cur) { if (!vipLeft()) break; await sleep(300); continue; }
+        const t = nextTask();
+        if (!t) break;
+        const brand = t.t === 'v' ? (t.n.startsWith('016') ? 'AIRTEL' : 'ROBI') : t.b.brand;
+        const msisdn = t.t === 'v' ? '88' + t.n : t.n;
+        const res = await check(brand, msisdn, auto.ctrl.signal, auto.stats);
+        if (res === null) { if (t.t === 'v') auto.verify.unshift(t.n); else auto.redo.push(t); return; }
+        if (t.e !== auto.epoch) return;
+        auto.sess++;
+        adapt(res === undefined);
+        if (t.t === 'v') {
+          if (res === false) { found.delete(t.n); aPager.schedule(); saveSoon(); }
+        } else {
+          if (!t.r) fin[t.g]++;
+          if (res === undefined) { auto.failedCount++; if (!t.r) { t.r = 1; auto.failed.push(t); } }
+          else if (res === true) {
+            const local = '0' + t.n.slice(3);
+            if (!found.has(local)) { found.set(local, { g: t.g, s: ++seq }); aPager.schedule(); saveSoon(); }
+          }
+        }
+        aTick(false);
+      }
+    } finally {
+      run.n--;
+      if (run.n === 0 && id === auto.id && auto.running) finish();
+    }
+  }
+
+  let wl = null;
+  async function wake() { try { if (navigator.wakeLock && !wl) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } catch (e) {} }
+  function unwake() { try { if (wl) { wl.release(); wl = null; } } catch (e) {} }
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) saveNow(); else if (auto.running) wake();
+    });
+  }
+
+  function btn() { $('aPause').textContent = auto.running ? '⏸ বিরতি' : '▶ চালু করুন'; }
+
+  function finish() {
+    auto.running = false; btn(); unwake(); saveNow(); aTick(true);
+    $('aBar').style.width = '100%';
+    aPager.render();
+    $('aStat').innerHTML = `✅ সব প্যাটার্ন শেষ · পাওয়া গেছে <b>${found.size}</b> টি` + (auto.failedCount ? ` · ব্যর্থ ${auto.failedCount}` : '');
+  }
+  function autoStart() {
+    if (auto.running) return;
+    stopManual();
+    auto.running = true; auto.id++;
+    auto.ctrl = new AbortController();
+    auto.t0 = Date.now(); auto.sess = 0; auto.sp0 = auto.t0; auto.sp1 = 0;
+    auto.cur = MAXC; auto.win = [];
+    if (!auto.verified) { auto.verified = true; auto.verify = [...found.keys()]; }
+    aMsg('');
+    btn(); wake();
+    const id = auto.id, run = { n: MAXC };
+    for (let i = 0; i < MAXC; i++) aWorker(id, i, run);
+  }
+  function autoPause(text) {
+    if (!auto.running) return;
+    auto.running = false; auto.id++;
+    if (auto.ctrl) auto.ctrl.abort();
+    btn(); unwake(); saveNow(); aTick(true);
+    if (text) aMsg(text);
+  }
+  function autoReset() {
+    autoPause();
+    auto.epoch++;
+    found.clear(); seq = 0; auto.verify = []; auto.redo = []; auto.failed = [];
+    auto.failedCount = 0; auto.verified = true; auto.speed = 0; auto.warnedZero = false;
+    FAMS.forEach(f => { cursor[f.id] = 0; fin[f.id] = 0; });
+    try { localStorage.removeItem(AKEY); } catch (e) {}
+    aPager.reset(); aMsg('');
+    autoStart();
+  }
+  $('aPause').addEventListener('click', () => { if (auto.running) autoPause('বিরতিতে আছে, "চালু করুন" চাপলে আগের জায়গা থেকে চলবে'); else autoStart(); });
+  $('aReset').addEventListener('click', autoReset);
+
+  // ================= ম্যানুয়াল: ৫/৬ ডিজিট ঘর + কাস্টম ৮ ঘর =================
+  const MKEY = 'vipFinder_v3';
+  let savedM = {};
+  try { savedM = JSON.parse(localStorage.getItem(MKEY) || '{}') || {}; } catch (e) {}
+  let mRun = 0, mCtrl = null, activeKey = null, opSel = 'both', mFound = [], mJob = null;
+  const mMsg = t => { $('warn').textContent = t; };
+  const mPager = makePager($('mPagerHost'), {
+    getAll: () => mFound.slice().sort(), getHl: () => (mJob ? mJob.hl : (n => n)), msg: mMsg,
+    fname: () => 'numbers_' + (mJob ? mJob.title.replace(/[^0-9•]/g, '') : 'list') + '.txt'
+  });
+  function stopManual() { mRun++; if (mCtrl) mCtrl.abort(); }
+
+  function badge(key) { const n = (savedM[key] || []).length; return n ? `<span class="b">${n}</span>` : ''; }
+  function buildTiles() {
+    [[5, 'g5'], [6, 'g6']].forEach(([len, id]) => {
+      const g = $(id);
+      g.innerHTML = '';
+      for (let d = 0; d < 10; d++) {
+        const pat = String(d).repeat(len);
+        const b = el('button', { className: 'tile' + (pat === activeKey ? ' on' : '') });
+        b.dataset.pat = pat;
+        b.innerHTML = pat + badge(pat);
+        b.addEventListener('click', () => startPattern(pat));
+        g.appendChild(b);
+      }
+    });
+  }
+  function patternSuffixes(pat) {
+    const free = 8 - pat.length, total = Math.pow(10, free), set = new Set();
+    for (let s = 0; s <= free; s++)
+      for (let k = 0; k < total; k++) { const f = pad(k, free); set.add(f.slice(0, s) + pat + f.slice(s)); }
+    return [...set];
+  }
+  function maskSuffixes(mask) {
+    const freePos = [];
+    mask.forEach((v, i) => { if (v === '') freePos.push(i); });
+    const total = Math.pow(10, freePos.length), out = [];
+    for (let k = 0; k < total; k++) {
+      const f = pad(k, freePos.length), d = mask.slice();
+      freePos.forEach((p, j) => { d[p] = f[j]; });
+      out.push(d.join(''));
+    }
+    return out;
+  }
+
+  async function runManual(job) {
+    autoPause('ম্যানুয়াল সার্চ চলছে, তাই অটো বিরতিতে। শেষ হলে "চালু করুন" চাপুন');
+    stopManual();
+    const id = mRun;
+    mCtrl = new AbortController();
+    const signal = mCtrl.signal;
+    activeKey = job.key; mJob = job; mFound = []; buildTiles();
+
+    $('resCard').style.display = 'block';
+    $('resTitle').textContent = '🔎 ' + job.title;
+    mMsg(''); $('apiNote').textContent = '';
+    $('bar').style.width = '0%'; $('stat').textContent = 'শুরু হচ্ছে...';
+    mPager.reset();
+    try { $('resCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+
+    const tasks = [];
+    for (const sfx of job.suffixes) for (const b of job.brands) tasks.push({ b, n: b.base + sfx });
+    const total = tasks.length, stats = { noteEl: $('apiNote') };
+    let done = 0, failed = 0, i = 0;
+    const t0 = Date.now();
+
+    const tick = () => {
+      const sec = (Date.now() - t0) / 1000, speed = done / Math.max(sec, 1);
+      const left = Math.round((total - done) / Math.max(speed, 0.1));
+      $('bar').style.width = (done / total * 100) + '%';
+      $('stat').innerHTML = `চেক হয়েছে ${done}/${total} · পাওয়া গেছে <b>${mFound.length}</b> টি<br>গতি ${speed.toFixed(1)}/সেকেন্ড · বাকি প্রায় ${Math.floor(left / 60)} মি ${left % 60} সে` + (failed ? ` · ব্যর্থ ${failed}` : '');
+      if (failed > 20 && failed > done * 0.2) mMsg('⚠️ অনেক রিকোয়েস্ট ব্যর্থ (' + (stats.lastErr || '') + '), নেট বা API সীমা চেক করুন');
+    };
+    const worker = async () => {
+      while (i < total && id === mRun) {
+        const { b, n } = tasks[i++];
+        const res = await check(b.brand, n, signal, stats);
+        if (id !== mRun) return;
+        done++;
+        if (res === undefined) failed++;
+        if (res === true) { mFound.push('0' + n.slice(3)); mPager.schedule(); }
+        if (done % 10 === 0 || done === total) tick();
+      }
+    };
+    await Promise.all(Array.from({ length: MANUAL_CONC }, worker));
+    if (id !== mRun) return;
+    savedM[job.key] = mFound.slice();
+    try { localStorage.setItem(MKEY, JSON.stringify(savedM)); } catch (e) {}
+    mPager.render(); buildTiles(); tick();
+    $('bar').style.width = '100%';
+    $('stat').innerHTML = `✅ সম্পন্ন: ${total} টি চেক, পাওয়া গেছে <b>${mFound.length}</b> টি` + (failed ? ` · ${failed} টি ব্যর্থ` : '');
+  }
+
+  function startPattern(pat) {
+    runManual({
+      key: pat, title: pat, suffixes: patternSuffixes(pat), brands: BR,
+      hl: n => { const i = n.indexOf(pat); return i < 0 ? n : `${n.slice(0, i)}<b>${pat}</b>${n.slice(i + pat.length)}`; }
+    });
+  }
+
+  // কাস্টম ৮ ঘর
+  const boxes = [];
+  for (let p = 0; p < 8; p++) {
+    const inp = el('input', { type: 'text', inputMode: 'numeric', maxLength: 1, autocomplete: 'off' });
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if (inp.value && p < 7) boxes[p + 1].focus();
+      refresh();
+    });
+    inp.addEventListener('keydown', e => { if (e.key === 'Backspace' && !inp.value && p > 0) boxes[p - 1].focus(); });
+    inp.addEventListener('paste', e => {
+      const t = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      if (!t) return;
+      e.preventDefault();
+      for (let k = 0; k < t.length && p + k < 8; k++) boxes[p + k].value = t[k];
+      refresh();
+    });
+    $('pos').appendChild(inp);
+    boxes.push(inp);
+  }
+  const mask = () => boxes.map(b => b.value);
+  const selBrands = () => (opSel === 'both' ? BR : BR.filter(b => b.code === opSel));
+  function refresh() {
+    const m = mask(), free = m.filter(v => v === '').length, fixed = 8 - free;
+    const go = $('cGo'), hint = $('cHint');
+    const count = Math.pow(10, free) * selBrands().length;
+    if (fixed === 0) { hint.textContent = 'যে ঘরগুলোর ডিজিট জানেন বসান, বাকি ঘর খালি রাখুন (খালি ঘরে ০-৯ সব চেক হবে)। যেমন: 5555 6666'; go.disabled = true; return; }
+    if (free > MAX_FREE) { hint.textContent = `⚠️ সর্বোচ্চ ${MAX_FREE}টি ঘর খালি রাখা যাবে। আরও ${free - MAX_FREE}টি ঘরে ডিজিট দিন।`; go.disabled = true; return; }
+    hint.textContent = `${fixed}টি ডিজিট দেওয়া, ${free}টি খালি → মোট ${count.toLocaleString()} টি চেক হবে (প্রায় ${timeLabel(count / 8)})`;
+    go.disabled = false;
+  }
+  document.getElementById('ops').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    opSel = b.dataset.op;
+    document.getElementById('ops').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    refresh();
+  }));
+  $('cGo').addEventListener('click', () => {
+    const m = mask(), brands = selBrands();
+    const label = m.map(v => v === '' ? '•' : v).join('');
+    runManual({
+      key: 'c:' + label + ':' + opSel, title: label, suffixes: maskSuffixes(m), brands,
+      hl: n => n.slice(0, 3) + n.slice(3).split('').map((ch, i) => m[i] === '' ? ch : `<b>${ch}</b>`).join('')
+    });
+  });
+  $('stopBtn').addEventListener('click', () => { stopManual(); $('stat').innerHTML += '<br>⏹ থামানো হয়েছে'; });
+
+  // ================= শুরু =================
+  refresh();
+  buildTiles();
+  aPager.render();
+  aTick(true);
+  btn();
+  autoStart();
+})();
+</script>
+</body>
+</html>
